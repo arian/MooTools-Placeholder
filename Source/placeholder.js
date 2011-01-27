@@ -11,13 +11,13 @@ authors:
 - Alexey Gromov
 - Arian Stolwijk
 - Phil Freo
+- Sean McArthur
 
 requires: [Core/Element]
 provides: [Element.MooPlaceholder, MooPlaceholder]
 
 ...
 */
-
 
 (function(){
 
@@ -38,7 +38,10 @@ Element.implement('MooPlaceholder', function(color){
 
 	var text = element.get(placeholder),
 		defaultColor = element.getStyle('color'),
-		form = element.getParent('form');
+		form = element.getParent('form'),
+		type = this.get('type'),
+		that = this,
+		pseudoClone;
 
 	element.setStyle('color', color).set('value', text);
 
@@ -50,15 +53,34 @@ Element.implement('MooPlaceholder', function(color){
 
 		blur: function(){
 			value = element.get('value');
-			if (value == '' || value == text) element.setStyle('color', color).set('value', text);
+			if (value == '' || value == text) {
+				element.setStyle('color', color).set('value', text);
+				if(pseudoClone) {
+					pseudoClone.replaces(this);
+				}
+			}
 		}
 	});
+	
+	if(type == 'password') {
+		pseudoClone = new Element('input');
+		['name','id', 'class', 'value', 'style'].forEach(function(attr) {
+			pseudoClone.set(attr, that.get(attr));
+		});
+		pseudoClone.addEvent('focus', function() {
+			that.replaces(pseudoClone).focus();
+			that.focus();
+		});
+		pseudoClone.set('type', 'text');
+		pseudoClone.replaces(this);
+	}
 
 	if (form) form.addEvent('submit', function(){
 		if (element.get('value') == text) element.set('value', '');
 	});
 
 	return element;
+
 });
 
 
